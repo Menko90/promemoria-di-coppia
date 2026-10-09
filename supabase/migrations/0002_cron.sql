@@ -5,8 +5,7 @@
 create extension if not exists pg_cron;
 create extension if not exists pg_net;
 
-select cron.unschedule(jobid) from cron.job where jobname = 'motore-promemoria';
-
+-- se esiste già un timer con lo stesso nome, cron.schedule lo sostituisce
 select cron.schedule(
   'motore-promemoria',
   '* * * * *',
