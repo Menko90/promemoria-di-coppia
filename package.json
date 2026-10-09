@@ -1,0 +1,24 @@
+{
+  "name": "promemoria-di-coppia",
+  "private": true,
+  "type": "module",
+  "description": "I promemoria della coppia, al momento giusto.",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "icons": "node scripts/icons.mjs",
+    "test:db": "bash tests/run_db_tests.sh",
+    "test:push": "node --experimental-strip-types --test tests/webpush.test.ts tests/engine.test.ts",
+    "test:logic": "tsx --test tests/logic.test.ts",
+    "test:ui": "node tests/ui.test.mjs"
+  },
+  "dependencies": {
+    "react": "19.2.8",
+    "react-dom": "19.2.8"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2",
+    "playwright": "1.56.1",
+    "sharp": "0.35.4",
+    "tsx": "4.23.12"
+  }
+}
