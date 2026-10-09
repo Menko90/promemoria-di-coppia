@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#B4235F">
+<title>Privacy · Promemoria di Coppia</title>
+<link rel="icon" type="image/png" href="/icons/icon-192.png">
+<style>
+  :root { --ground: #fff4f1; --card: #ffffff; --ink: #2b1023; --muted: #6f5566; --berry: #b4235f; --line: #f0dcd9; }
+  @media (prefers-color-scheme: dark) {
+    :root { --ground: #1c0d17; --card: #27141f; --ink: #fbeef2; --muted: #c7a9b9; --berry: #f07aa8; --line: #3d2433; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--ground); color: var(--ink);
+    font: 500 16px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 680px; margin: 0 auto; padding: 32px 16px 48px; }
+  .back { display: inline-block; margin-bottom: 20px; color: var(--berry); font-weight: 700; text-decoration: none; }
+  h1 { margin: 0 0 6px; font-size: 30px; line-height: 1.15; letter-spacing: -0.4px; }
+  .date { margin: 0 0 24px; color: var(--muted); font-size: 14px; }
+  section { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 18px 18px 6px; margin-bottom: 14px; }
+  h2 { margin: 0 0 8px; font-size: 18px; color: var(--berry); }
+  p, li { margin: 0 0 12px; }
+  ul { padding-left: 20px; margin: 0 0 12px; }
+  a { color: var(--berry); }
+</style>
+</head>
+<body>
+<main>
+  <a class="back" href="/">← Torna all'app</a>
+  <h1>Privacy</h1>
+  <p class="date">Promemoria di Coppia · aggiornata il 9 ottobre 2026</p>
+
+  <section>
+    <h2>Che cos'è</h2>
+    <p>Promemoria di Coppia è un'app privata con cui due persone si mandano promemoria e ricevono notifiche.
+      È gestita da un singolo sviluppatore per uso personale e familiare. Non contiene pubblicità e non vende né cede dati a nessuno.</p>
+  </section>
+
+  <section>
+    <h2>Quali dati usa</h2>
+    <ul>
+      <li><strong>Dal tuo account Google</strong>, quando accedi: nome, indirizzo email e foto del profilo. Nient'altro: l'app non legge la tua posta, i contatti, i file o il calendario.</li>
+      <li><strong>Quello che scrivi nell'app</strong>: i promemoria, gli orari, le note quando rimandi un compito e i premi.</li>
+      <li><strong>Dati tecnici per le notifiche</strong>: l'indirizzo di iscrizione alle notifiche del tuo telefono o browser e il tipo di browser; un registro degli invii, che serve a capire perché una notifica non è arrivata e si cancella da solo dopo 14 giorni.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>A cosa servono</h2>
+    <p>Solo a far funzionare l'app: farti accedere, mostrare i promemoria a te e al partner con cui ti sei collegato, e mandarti le notifiche al momento giusto.</p>
+  </section>
+
+  <section>
+    <h2>Chi li vede</h2>
+    <p>Solo tu e il partner collegato al tuo account. Il dettaglio del premio speciale resta nascosto a chi deve fare il compito finché non lo segna come fatto.
+      Nessun altro utente può vedere i vostri promemoria.</p>
+  </section>
+
+  <section>
+    <h2>Dove sono conservati</h2>
+    <ul>
+      <li>Il database è su <strong>Supabase</strong>, con server a Francoforte, in Germania (Unione Europea).</li>
+      <li>Le pagine dell'app sono ospitate da <strong>Vercel</strong>.</li>
+      <li>Le notifiche passano, cifrate, attraverso il servizio di notifiche del produttore del tuo browser (per esempio Google, Apple o Mozilla), che non può leggerne il contenuto.</li>
+      <li>I caratteri tipografici e una libreria tecnica sono scaricati da Google Fonts e jsDelivr, che vedono l'indirizzo IP del dispositivo come qualsiasi sito.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Per quanto tempo</h2>
+    <p>I dati restano finché usi l'app. Quando elimini un promemoria viene cancellato. Puoi chiedere in qualsiasi momento la cancellazione completa del tuo account e di tutti i tuoi dati: verrà fatta entro 30 giorni.</p>
+  </section>
+
+  <section>
+    <h2>I tuoi diritti e i contatti</h2>
+    <p>Puoi chiedere di vedere, correggere o cancellare i tuoi dati scrivendo all'indirizzo email di assistenza
+      che Google mostra nella schermata di accesso dell'app (tocca il nome dell'app in quella schermata).</p>
+    <p>L'uso delle informazioni ricevute dalle API di Google rispetta le
+      <a href="https://developers.google.com/terms/api-services-user-data-policy" rel="noopener">Norme sui dati utente dei servizi API di Google</a>,
+      compresi i requisiti di uso limitato.</p>
+  </section>
+</main>
+</body>
+</html>

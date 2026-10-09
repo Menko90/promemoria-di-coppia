@@ -38,6 +38,7 @@ export function Login({ invite }: { invite: string | null }) {
         {busy ? "Apro Google…" : "Accedi con Google"}
       </button>
       {error && <p className="error" role="alert">{error}</p>}
+      <a className="start-privacy" href="/privacy.html">Privacy</a>
     </main>
   );
 }
