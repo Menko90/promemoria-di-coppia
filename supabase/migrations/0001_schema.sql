@@ -158,7 +158,7 @@ begin
 end $$;
 
 create or replace function public.touch_updated_at()
-returns trigger language plpgsql as $$
+returns trigger language plpgsql set search_path = public as $$
 begin
   new.updated_at := now();
   return new;
@@ -168,7 +168,7 @@ create trigger reminders_touch before update on public.reminders
 
 -- profilo creato in automatico al primo accesso
 create or replace function public.name_from_user(p_meta jsonb, p_email text)
-returns text language sql immutable as $$
+returns text language sql immutable set search_path = public as $$
   select coalesce(
     nullif(split_part(trim(coalesce(p_meta->>'full_name', p_meta->>'name', '')), ' ', 1), ''),
     nullif(split_part(coalesce(p_email, ''), '@', 1), ''),
@@ -225,7 +225,7 @@ returns text language sql stable set search_path = public as $$
 $$;
 
 create or replace function public.reward_label(p_reward text)
-returns text language sql immutable as $$
+returns text language sql immutable set search_path = public as $$
   select case p_reward
     when 'massaggio' then 'massaggio'
     when 'film' then 'serata film'
