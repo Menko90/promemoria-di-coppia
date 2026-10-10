@@ -61,10 +61,26 @@ self.addEventListener("push", (event) => {
   } catch (_) {
     m = { title: "Promemoria di Coppia", body: event.data ? event.data.text() : "" };
   }
-  const options = {
-    body: m.body || "",
-    tag: m.tag || undefined,
-    renotify: Boolean(m.tag),
+  event.waitUntil(showMessage(m));
+});
+
+// Ogni ripetizione di un promemoria è una notifica NUOVA (etichetta diversa), non un
+// aggiornamento della precedente: gli orologi collegati al telefono (Amazfit, Galaxy Watch…)
+// spesso ignorano gli aggiornamenti e vibrerebbero solo la prima volta.
+// Le vecchie notifiche dello stesso promemoria vengono chiuse, così ne resta una sola.
+async function showMessage(m) {
+  const repeat = m.kind === "promemoria" && m.reminderId && m.count > 1;
+  if (m.reminderId && m.kind === "promemoria") {
+    const old = await self.registration.getNotifications();
+    old.filter((n) => n.data && n.data.reminderId === m.reminderId && n.data.kind === "promemoria")
+      .forEach((n) => n.close());
+  }
+  const tag = m.tag ? (m.kind === "promemoria" ? `${m.tag}-${m.count || Date.now()}` : m.tag) : undefined;
+  const body = repeat ? `${m.count}° avviso · ${m.body || ""}` : (m.body || "");
+  return self.registration.showNotification(m.title || "Promemoria di Coppia", {
+    body,
+    tag,
+    renotify: Boolean(tag),
     icon: "/icons/icon-192.png",
     badge: "/icons/badge-96.png",
     data: m,
@@ -74,9 +90,8 @@ self.addEventListener("push", (event) => {
     actions: m.actions
       ? [{ action: "fatto", title: "Fatto" }, { action: "rimanda", title: "Non posso ora" }]
       : [],
-  };
-  event.waitUntil(self.registration.showNotification(m.title || "Promemoria di Coppia", options));
-});
+  });
+}
 
 async function openApp(url) {
   const list = await self.clients.matchAll({ type: "window", includeUncontrolled: true });

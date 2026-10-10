@@ -141,6 +141,7 @@ export async function runEngine(env: Env, secrets: Record<string, string>) {
       url: item.reminder_id ? `/?apri=${item.reminder_id}` : "/",
       urgent: item.urgent,
       reward: item.reward ?? null,
+      count: item.count ?? null,
       actions: Boolean(action),
       action,
     };

@@ -71,6 +71,7 @@ test("il motore invia, firma il pulsante Fatto, pulisce i telefoni non più vali
   const msg = JSON.parse(await decrypt(new Uint8Array(p.body), s1.keys, s1.auth));
   assert.equal(msg.title, "Chiama la pediatra");
   assert.equal(msg.tag, `promemoria-${R}`);
+  assert.equal(msg.count, 1, "numero dell'avviso passato al telefono");
   assert.equal(msg.url, `/?apri=${R}`);
   assert.equal(msg.actions, true);
   assert.equal(msg.action.url, "https://prog.supabase.co/functions/v1/azione");

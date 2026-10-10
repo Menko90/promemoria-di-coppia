@@ -35,6 +35,7 @@ git commit -am "..." && git push   # Vercel pubblica da solo
 bash tests/run_db_tests.sh                     # database (serve un Postgres locale)
 node --experimental-strip-types --test tests/webpush.test.ts tests/engine.test.ts
 tsx --test tests/logic.test.ts
+node --test tests/sw.test.mjs                  # notifiche sul telefono (service worker)
 node tests/ui.test.mjs                         # interfaccia in un browser vero, con dati finti
 ```
 
