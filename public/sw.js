@@ -1,8 +1,8 @@
 /* Service worker di Promemoria di Coppia: notifiche e funzionamento offline. */
-const VERSION = "jsappQA3LUJ4Dcss";
+const VERSION = "jsappTLOFH4RHcss";
 const CACHE = "promemoria-" + VERSION;
 const EXT_CACHE = "promemoria-ext";
-const SHELL = ["/", "/manifest.webmanifest", "/icons/icon-192.png", "/icons/badge-96.png", "/assets/app.WKDNAGHY.js", "/assets/app.QA3LUJ4D.css"];
+const SHELL = ["/", "/manifest.webmanifest", "/sfondo.webp", "/icons/icon-192.png", "/icons/badge-96.png", "/assets/app.BLFAWBTM.js", "/assets/app.TLOFH4RH.css"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));

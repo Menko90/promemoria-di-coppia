@@ -34,6 +34,7 @@ const js = await esbuild.build({
 const css = await esbuild.build({
   entryPoints: [join(root, "src/styles.css")],
   bundle: true,
+  external: ["/*"], // file già in public/ (es. /sfondo.webp): restano come sono
   minify: true,
   outdir: out,
   entryNames: "app.[hash]",

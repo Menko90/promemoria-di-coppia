@@ -55,10 +55,14 @@ export function FlameHeart({ size = 22 }: { size?: number }) {
 export function AppMark({ size = 64 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 64 64" aria-hidden="true">
-      <rect width="64" height="64" rx="18" fill="#B4235F" />
+      <defs>
+        <linearGradient id="am-fondo" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#3A4150" /><stop offset="1" stopColor="#1C2029" /></linearGradient>
+        <linearGradient id="am-cuore" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#F59A7A" /><stop offset="1" stopColor="#D0505F" /></linearGradient>
+      </defs>
+      <rect width="64" height="64" rx="18" fill="url(#am-fondo)" stroke="rgba(255,255,255,0.3)" />
       <path d="M32 50c-10-7-16-12.5-16-19.5 0-5 3.8-8.5 8.3-8.5 3.3 0 5.9 1.7 7.7 4.3 1.8-2.6 4.4-4.3 7.7-4.3 4.5 0 8.3 3.5 8.3 8.5 0 7-6 12.5-16 19.5z"
-        fill="none" stroke="#FFFFFF" strokeWidth="3.4" strokeLinejoin="round" />
-      <path d="M25.5 32.5l4.5 4.5 8.5-8.5" fill="none" stroke="#FFFFFF" strokeWidth="3.4" strokeLinecap="round" strokeLinejoin="round" />
+        fill="none" stroke="url(#am-cuore)" strokeWidth="3.6" strokeLinejoin="round" />
+      <path d="M25.5 32.5l4.5 4.5 8.5-8.5" fill="none" stroke="url(#am-cuore)" strokeWidth="3.6" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }

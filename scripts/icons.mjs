@@ -14,12 +14,17 @@ const heart = (stroke, w) => `
     fill="none" stroke="${stroke}" stroke-width="${w}" stroke-linejoin="round"/>
   <path d="M204 252l36 36 68-68" fill="none" stroke="${stroke}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"/>`;
 
-const full = (pad) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" fill="#B4235F"/>
-  <g transform="translate(${pad} ${pad}) scale(${(512 - 2 * pad) / 512})">${heart("#FFFFFF", 26)}</g>
+// grafite con il cuore in corallo (tema "Grafite e corallo")
+const defs = `<defs>
+  <linearGradient id="fondo" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3A4150"/><stop offset="1" stop-color="#1C2029"/></linearGradient>
+  <linearGradient id="cuore" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#F59A7A"/><stop offset="1" stop-color="#D0505F"/></linearGradient>
+</defs>`;
+const full = (pad) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">${defs}
+  <rect width="512" height="512" fill="url(#fondo)"/>
+  <g transform="translate(${pad} ${pad}) scale(${(512 - 2 * pad) / 512})">${heart("url(#cuore)", 28)}</g>
 </svg>`;
-const rounded = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="112" fill="#B4235F"/>${heart("#FFFFFF", 26)}
+const rounded = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">${defs}
+  <rect width="512" height="512" rx="112" fill="url(#fondo)"/>${heart("url(#cuore)", 28)}
 </svg>`;
 const badge = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   <g transform="translate(-40 -40) scale(1.16)">${heart("#FFFFFF", 34)}</g>

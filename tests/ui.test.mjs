@@ -145,6 +145,7 @@ const shot = (page, name, full = false) => page.screenshot({ path: join(shots, `
   const { ctx, page } = await open(seed());
   await page.getByRole("button", { name: /Ho assegnato/ }).first().click();
   await page.getByText("Ritira il pacco").waitFor();
+  await page.waitForTimeout(600); // fine dello scorrimento
   await shot(page, "05-ho-assegnato");
   await shot(page, "05b-ho-assegnato-intera", true);
   await ctx.close();
@@ -170,7 +171,7 @@ const shot = (page, name, full = false) => page.screenshot({ path: join(shots, `
   assert.equal(cr.args.p_reward, "speciale");
   assert.equal(cr.args.p_reward_detail, "Massaggio di un'ora");
   assert.ok(cr.args.p_end && new Date(cr.args.p_end) > new Date(cr.args.p_start));
-  await page.getByText("Chiama la pediatra").first().waitFor();
+  await page.getByRole("region", { name: "Ho assegnato" }).getByText("Chiama la pediatra").waitFor();
   await shot(page, "07-dopo-invio");
 
   // errore: titolo vuoto

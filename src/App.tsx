@@ -8,6 +8,7 @@ import { DetailSheet, InviteSheet, PostponeSheet, Reveal, SettingsSheet } from "
 import { Login, Pairing } from "./Start";
 import { longDate, whenLabel } from "./time";
 import { BottomNav, cx, Toast, type View } from "./ui";
+import { Carousel } from "./Carousel";
 
 type Session = { user: { id: string } } | null;
 type Overlay =
@@ -280,13 +281,15 @@ export function App() {
             <button type="button" className={cx(view === "assigned" && "on")} aria-current={view === "assigned" ? "page" : undefined}
               onClick={() => setView("assigned")}>Ho assegnato · {sentCount}</button>
           </nav>
-          {view === "me" ? (
-            <PerMe data={data} now={now} busy={busy} pushOk={pushOk}
-              onDone={done} onPostpone={(r) => setOverlay({ kind: "postpone", r })}
-              onOpen={(r) => setOverlay({ kind: "detail", r })} onEnablePush={turnOnPush} />
-          ) : (
-            <Assigned data={data} now={now} onDelete={remove} onInvite={() => setOverlay({ kind: "invite" })} />
-          )}
+          <Carousel index={view === "me" ? 0 : 1} onIndex={(i) => setView(i === 0 ? "me" : "assigned")}
+            disabled={overlay !== null} labels={["Per me", "Ho assegnato"]}>
+            {[
+              <PerMe key="me" data={data} now={now} busy={busy} pushOk={pushOk}
+                onDone={done} onPostpone={(r) => setOverlay({ kind: "postpone", r })}
+                onOpen={(r) => setOverlay({ kind: "detail", r })} onEnablePush={turnOnPush} />,
+              <Assigned key="assigned" data={data} now={now} onDelete={remove} onInvite={() => setOverlay({ kind: "invite" })} />,
+            ]}
+          </Carousel>
           <BottomNav view={view} onView={setView} onNew={() => { setView("new"); window.scrollTo(0, 0); }} />
         </>
       )}

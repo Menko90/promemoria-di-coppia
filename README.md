@@ -37,6 +37,7 @@ node --experimental-strip-types --test tests/webpush.test.ts tests/engine.test.t
 tsx --test tests/logic.test.ts
 node --test tests/sw.test.mjs                  # notifiche sul telefono (service worker)
 node tests/ui.test.mjs                         # interfaccia in un browser vero, con dati finti
+node tests/swipe.test.mjs                      # swipe a carrello con tocchi simulati
 ```
 
 ## Prima installazione (già fatta una volta, qui per riferimento)

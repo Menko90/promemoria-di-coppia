@@ -2,7 +2,7 @@
 const VERSION = "__VERSION__";
 const CACHE = "promemoria-" + VERSION;
 const EXT_CACHE = "promemoria-ext";
-const SHELL = ["/", "/manifest.webmanifest", "/icons/icon-192.png", "/icons/badge-96.png", __ASSETS__];
+const SHELL = ["/", "/manifest.webmanifest", "/sfondo.webp", "/icons/icon-192.png", "/icons/badge-96.png", __ASSETS__];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
