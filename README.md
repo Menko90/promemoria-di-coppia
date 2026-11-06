@@ -20,7 +20,10 @@ Le notifiche usano il sistema standard dei browser (Web Push con chiavi VAPID): 
 - La prima arriva all'orario di inizio, poi una ogni 15/30/60 minuti se scelto.
 - Si fermano quando il compito è **fatto** o quando passa l'**orario limite** (in quel caso chi l'ha assegnato viene avvisato).
 - **Non posso ora**: nuovo inizio, nuova fine e una nota; le notifiche ripartono dal nuovo orario e l'altro viene avvisato.
-- I ricorrenti generano da soli la volta successiva.
+- I ricorrenti generano da soli la volta successiva; se non hanno orario limite e nessuno li segna fatti,
+  alla volta successiva diventano "scaduti" e ripartono.
+- Ogni notifica porta un numero di ricevuta: quando arriva sul telefono, il telefono lo comunica al server
+  (tabella `push_receipts`), così si vede quali notifiche sono arrivate davvero.
 
 ## Aggiornare l'app
 
@@ -47,5 +50,6 @@ node tests/swipe.test.mjs                      # swipe a carrello con tocchi sim
    (non salvarlo nel repository); copiare la chiave pubblica in `src/config.ts` insieme a URL e chiave pubblica di Supabase.
 3. Pubblicare le funzioni `motore` e `azione` senza verifica JWT (controllano da sole chi le chiama).
 4. Eseguire `supabase/migrations/0002_cron.sql` (timer ogni minuto).
+   Poi `supabase/migrations/0003_ricorrenti_e_ricevute.sql` (ricorrenti senza orario limite e ricevute di consegna).
 5. Supabase → Authentication: attivare Google (ID e segreto del client OAuth) e mettere l'indirizzo del sito
    tra i redirect consentiti.
