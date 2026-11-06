@@ -7,6 +7,7 @@ export interface Env {
   supabaseUrl: string;
   serviceKey: string;
   fetchImpl?: typeof fetch;
+  retryDelayMs?: number;
 }
 
 export interface WorkItem {
@@ -36,7 +37,31 @@ interface LogRow {
   ok: boolean;
   status: number | null;
   error: string | null;
+  delivery_id: string | null;
 }
+
+interface Timing {
+  repeat_minutes: number;
+  end_at: string | null;
+}
+
+/**
+ * Per quanto tempo il servizio di notifiche continua a provare a consegnare
+ * se il telefono non è raggiungibile (spento, senza rete, in risparmio energetico).
+ */
+export function ttlFor(kind: string, timing?: Timing, now = Date.now()): number {
+  if (kind !== "promemoria") return 86400;
+  if (!timing) return 1800;
+  // con la ripetizione ne arriva comunque un'altra: basta coprire l'intervallo
+  if (timing.repeat_minutes > 0) return Math.max(1800, timing.repeat_minutes * 60);
+  // avviso unico: fino all'orario limite, oppure 6 ore (meglio in ritardo che mai)
+  if (timing.end_at) return Math.min(86400, Math.max(1800, Math.round((Date.parse(timing.end_at) - now) / 1000)));
+  return 6 * 3600;
+}
+
+/** Errori temporanei del servizio di notifiche: vale la pena riprovare subito. */
+const isTransient = (status: number) => status === 0 || status === 429 || status >= 500;
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 export const CORS_HEADERS: Record<string, string> = {
   "Access-Control-Allow-Origin": "*",
@@ -95,6 +120,12 @@ export async function isAuthorized(env: Env, req: Request, secrets: Record<strin
 }
 
 export async function runEngine(env: Env, secrets: Record<string, string>) {
+  // i ricorrenti senza orario limite non fatti passano alla volta successiva (prima restavano fermi)
+  try {
+    await rpc(env, "roll_recurring", {});
+  } catch (e) {
+    console.error("roll_recurring", e);
+  }
   const items = await rpc<WorkItem[]>(env, "claim_work", {});
   const summary = { items: items.length, sent: 0, failed: 0, noDevice: 0 };
   if (!items.length) return summary;
@@ -109,6 +140,21 @@ export async function runEngine(env: Env, secrets: Record<string, string>) {
     `push_subscriptions?select=id,user_id,endpoint,p256dh,auth&user_id=in.(${userIds.join(",")})`,
   );
 
+  // ripetizione e orario limite dei promemoria, per decidere quanto a lungo riprovare la consegna
+  const timing = new Map<string, Timing>();
+  const reminderIds = [...new Set(items.filter((i) => i.kind === "promemoria" && i.reminder_id).map((i) => i.reminder_id!))];
+  if (reminderIds.length) {
+    try {
+      const rows = await rest<(Timing & { id: string })[]>(
+        env,
+        `reminders?select=id,repeat_minutes,end_at&id=in.(${reminderIds.join(",")})`,
+      );
+      for (const r of rows) timing.set(r.id, r);
+    } catch (e) {
+      console.error("tempi dei promemoria", e);
+    }
+  }
+
   const logs: LogRow[] = [];
   const gone: string[] = [];
   const okIds: string[] = [];
@@ -120,7 +166,7 @@ export async function runEngine(env: Env, secrets: Record<string, string>) {
       summary.noDevice++;
       logs.push({
         user_id: item.user_id, reminder_id: item.reminder_id, kind: item.kind,
-        ok: false, status: null, error: "nessun telefono con le notifiche attive",
+        ok: false, status: null, error: "nessun telefono con le notifiche attive", delivery_id: null,
       });
       continue;
     }
@@ -146,16 +192,29 @@ export async function runEngine(env: Env, secrets: Record<string, string>) {
       action,
     };
 
+    const opts = {
+      ttl: ttlFor(item.kind, item.reminder_id ? timing.get(item.reminder_id) : undefined),
+      urgency: (isReminder ? "high" : "normal") as "high" | "normal",
+      topic: isReminder && item.reminder_id ? item.reminder_id.replace(/-/g, "") : undefined,
+      fetchImpl: env.fetchImpl,
+    };
+
     for (const sub of mine) {
-      const res = await sendWebPush(sub, message, vapid, subject, {
-        ttl: isReminder ? 1800 : 86400,
-        urgency: isReminder ? "high" : "normal",
-        topic: isReminder && item.reminder_id ? item.reminder_id.replace(/-/g, "") : undefined,
-        fetchImpl: env.fetchImpl,
-      });
+      // ricevuta: il telefono, quando la notifica arriva, rimanda al server questo numero firmato
+      const deliveryId = crypto.randomUUID();
+      const receipt = secrets.action_secret
+        ? { url: actionUrl, id: deliveryId, sig: await signAction(secrets.action_secret, `ricevuta.${deliveryId}`) }
+        : undefined;
+      const payload = { ...message, receipt };
+      let res = await sendWebPush(sub, payload, vapid, subject, opts);
+      if (!res.ok && !res.gone && isTransient(res.status)) {
+        await sleep(env.retryDelayMs ?? 1500); // secondo tentativo dopo un errore temporaneo
+        res = await sendWebPush(sub, payload, vapid, subject, opts);
+        if (!res.ok) res = { ...res, error: `2 tentativi: ${res.error ?? ""}`.trim() };
+      }
       logs.push({
         user_id: item.user_id, reminder_id: item.reminder_id, kind: item.kind,
-        ok: res.ok, status: res.status, error: res.error ?? null,
+        ok: res.ok, status: res.status, error: res.error ?? null, delivery_id: deliveryId,
       });
       if (res.ok) {
         summary.sent++;
@@ -200,6 +259,29 @@ async function rpcFailBump(env: Env, id: string, n: number) {
   return rest(env, `push_subscriptions?id=eq.${id}`, {
     method: "PATCH", body: JSON.stringify({ fail_count: current + n }),
   });
+}
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** Ricevuta: il telefono conferma che la notifica è arrivata. */
+export async function runReceipt(
+  env: Env,
+  secrets: Record<string, string>,
+  input: { ricevuta?: unknown; firma?: unknown },
+) {
+  const { ricevuta: id, firma: sig } = input ?? {};
+  if (typeof id !== "string" || !UUID.test(id) || typeof sig !== "string") {
+    return { status: 400, body: { error: "ricevuta non valida" } };
+  }
+  if (!secrets.action_secret || !(await verifyAction(secrets.action_secret, `ricevuta.${id}`, sig))) {
+    return { status: 401, body: { error: "firma non valida" } };
+  }
+  await rest(env, "push_receipts?on_conflict=delivery_id", {
+    method: "POST",
+    body: JSON.stringify({ delivery_id: id.toLowerCase() }),
+    headers: { Prefer: "resolution=ignore-duplicates,return=minimal" },
+  });
+  return { status: 200, body: { ok: true } };
 }
 
 /** Pulsante "Fatto" premuto direttamente nella notifica. */

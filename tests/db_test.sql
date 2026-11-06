@@ -296,4 +296,75 @@ reset role;
   \echo 'Fatto da notifica non riuscito' \q
 \endif
 
+\echo '15. calcolo della volta successiva (giorni scelti, settimanale, ora legale)'
+do $$
+declare r public.reminders;
+begin
+  select * into r from reminders where title = 'Palestra' and status = 'pending';
+  r.plan_start_at := '2026-11-02 11:00:00 Europe/Rome'; -- lunedì
+  assert public.next_occurrence(r, r.plan_start_at) = '2026-11-04 11:00:00 Europe/Rome'::timestamptz, 'da lunedì a mercoledì';
+  assert public.next_occurrence(r, '2026-11-04 11:00:00 Europe/Rome') = '2026-11-09 11:00:00 Europe/Rome'::timestamptz, 'da mercoledì al lunedì dopo';
+  r.recurrence := 'weekly';
+  assert public.next_occurrence(r, r.plan_start_at) = '2026-11-09 11:00:00 Europe/Rome'::timestamptz, 'settimanale';
+  r.recurrence := 'daily';
+  r.plan_start_at := '2027-03-27 11:00:00 Europe/Rome';
+  assert public.next_occurrence(r, '2027-03-28 12:00:00 Europe/Rome') = '2027-03-29 11:00:00 Europe/Rome'::timestamptz, 'resta alle 11 col cambio d''ora';
+  r.recurrence := 'none';
+  assert public.next_occurrence(r, now()) is null;
+end $$;
+
+\echo '16. ricorrente senza orario limite e non fatto: passa alla volta successiva'
+set role authenticated;
+select set_config('request.jwt.claim.sub', :'B', false);
+select public.create_reminder('Vaccini', :'A', now() - interval '2 days 3 hours', null, 0, 'normale', 'daily', null, 'cena', 'Pizza') as r6 \gset
+select public.create_reminder('Stendi i panni', :'A', now() - interval '25 hours', null, 0, 'normale', 'daily') as r7 \gset
+select set_config('request.jwt.claim.sub', :'A', false);
+select public.postpone_reminder(:'r7', now() + interval '2 hours', null, 'stasera');
+select pg_temp.expect_error('select public.roll_recurring()', '%permission denied%');
+reset role;
+set role service_role;
+select public.roll_recurring() = 1 as rolled \gset
+select public.roll_recurring() = 0 as rolled_once \gset
+select public.claim_work() as w6 \gset
+reset role;
+\if :rolled
+\else
+  \echo 'il ricorrente non è passato alla volta successiva' \q
+\endif
+\if :rolled_once
+\else
+  \echo 'il ricorrente è stato rinnovato due volte' \q
+\endif
+do $$
+declare o public.reminders; n public.reminders;
+begin
+  select * into o from reminders where title = 'Vaccini' and status = 'missed';
+  select * into n from reminders where title = 'Vaccini' and status = 'pending';
+  assert o.id is not null, 'la volta vecchia diventa scaduta';
+  assert n.id is not null, 'nasce la nuova volta';
+  assert n.series_id = o.id and n.end_at is null and n.repeat_minutes = 0;
+  assert (n.start_at at time zone 'Europe/Rome') = (o.plan_start_at at time zone 'Europe/Rome') + interval '2 days', 'riparte dalla volta più recente';
+  assert n.start_at <= now(), 'la nuova volta è già arrivata';
+  assert (select detail from reward_details where reminder_id = n.id) = 'Pizza', 'premio copiato';
+  assert (select count(*) from reminders where title = 'Stendi i panni' and status = 'pending') = 1, 'il rimandato non si tocca';
+end $$;
+select jsonb_path_exists(:'w6'::jsonb, '$[*] ? (@.kind == "promemoria" && @.title == "Vaccini")') as new_sent \gset
+select jsonb_path_exists(:'w6'::jsonb, '$[*] ? (@.kind == "scaduto" && @.title == "Tempo scaduto: Vaccini")') as missed_sent \gset
+\if :new_sent
+\else
+  \echo 'la nuova volta non viene notificata:' :'w6' \q
+\endif
+\if :missed_sent
+\else
+  \echo 'chi l''ha assegnato non viene avvisato:' :'w6' \q
+\endif
+
+\echo '17. ricevute: solo il motore'
+set role authenticated;
+select pg_temp.expect_error('select * from public.push_receipts', '%permission denied%');
+reset role;
+set role service_role;
+insert into public.push_receipts (delivery_id) values (gen_random_uuid());
+reset role;
+
 \echo 'TUTTI I TEST DEL DATABASE SUPERATI'

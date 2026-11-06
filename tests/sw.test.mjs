@@ -7,9 +7,10 @@ import vm from "node:vm";
 
 const root = new URL("..", import.meta.url).pathname;
 
-function loadSW() {
+function loadSW({ offline = false } = {}) {
   const listeners = {};
   const shown = [];
+  const posted = [];
   const registration = {
     async getNotifications() {
       return shown.filter((n) => !n.closed);
@@ -26,13 +27,18 @@ function loadSW() {
     skipWaiting: () => {},
   };
   const src = readFileSync(`${root}public/sw.js`, "utf8");
-  vm.runInNewContext(src, { self, caches: {}, fetch: async () => ({}), URL, console });
+  const fetch = async (url, init = {}) => {
+    posted.push({ url, ...init, shownBefore: shown.length });
+    if (offline) throw new TypeError("Failed to fetch");
+    return { ok: true };
+  };
+  vm.runInNewContext(src, { self, caches: {}, fetch, URL, console });
   async function push(message) {
     let done;
     listeners.push({ data: { json: () => message, text: () => "" }, waitUntil: (p) => { done = p; } });
     await done;
   }
-  return { push, shown };
+  return { push, shown, posted };
 }
 
 const R = "11111111-2222-3333-4444-555555555555";
@@ -65,4 +71,32 @@ test("messaggi vecchi senza numero dell'avviso funzionano lo stesso", async () =
   await push({ ...base });
   assert.match(shown[0].tag, new RegExp(`^promemoria-${R}-\\d+$`));
   assert.equal(shown[0].body, "da Giulia");
+});
+
+test("ricevuta: dopo aver mostrato la notifica il telefono avvisa il server", async () => {
+  const { push, shown, posted } = loadSW();
+  await push({ ...base, count: 1, receipt: { url: "https://p.supabase.co/functions/v1/azione", id: "abc-123", sig: "firma" } });
+  assert.equal(shown.length, 1);
+  assert.equal(posted.length, 1);
+  assert.equal(posted[0].url, "https://p.supabase.co/functions/v1/azione");
+  assert.equal(posted[0].method, "POST");
+  assert.equal(posted[0].headers["Content-Type"], "text/plain", "richiesta semplice, senza controllo preliminare");
+  assert.deepEqual(JSON.parse(posted[0].body), { ricevuta: "abc-123", firma: "firma" });
+  assert.equal(posted[0].shownBefore, 1, "prima la notifica, poi la ricevuta");
+  assert.equal(shown[0].data.receipt.id, "abc-123");
+});
+
+test("senza ricevuta nel messaggio non parte nessuna richiesta", async () => {
+  const { push, shown, posted } = loadSW();
+  await push({ ...base, count: 1 });
+  assert.equal(posted.length, 0);
+  assert.equal(shown.length, 1);
+});
+
+test("se la rete manca la ricevuta si perde, ma la notifica resta", async () => {
+  const { push, shown, posted } = loadSW({ offline: true });
+  await push({ ...base, count: 1, receipt: { url: "https://p/functions/v1/azione", id: "x", sig: "y" } });
+  assert.equal(posted.length, 1);
+  assert.equal(shown.length, 1);
+  assert.equal(shown[0].closed, false);
 });

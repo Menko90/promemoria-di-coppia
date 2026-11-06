@@ -6,4 +6,5 @@ $PSQL -d postgres -c "drop database if exists promemoria_test" >/dev/null
 $PSQL -d postgres -c "create database promemoria_test" >/dev/null
 $PSQL -d promemoria_test -f tests/supabase_mock.sql >/dev/null
 $PSQL -d promemoria_test -f supabase/migrations/0001_schema.sql >/dev/null
+$PSQL -d promemoria_test -f supabase/migrations/0003_ricorrenti_e_ricevute.sql >/dev/null
 $PSQL -d promemoria_test -f tests/db_test.sql

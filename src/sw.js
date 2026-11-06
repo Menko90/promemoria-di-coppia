@@ -77,7 +77,7 @@ async function showMessage(m) {
   }
   const tag = m.tag ? (m.kind === "promemoria" ? `${m.tag}-${m.count || Date.now()}` : m.tag) : undefined;
   const body = repeat ? `${m.count}° avviso · ${m.body || ""}` : (m.body || "");
-  return self.registration.showNotification(m.title || "Promemoria di Coppia", {
+  await self.registration.showNotification(m.title || "Promemoria di Coppia", {
     body,
     tag,
     renotify: Boolean(tag),
@@ -91,6 +91,18 @@ async function showMessage(m) {
       ? [{ action: "fatto", title: "Fatto" }, { action: "rimanda", title: "Non posso ora" }]
       : [],
   });
+  // ricevuta: dice al server che la notifica è arrivata davvero su questo telefono
+  if (m.receipt && m.receipt.url && m.receipt.id) {
+    try {
+      await fetch(m.receipt.url, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain" },
+        body: JSON.stringify({ ricevuta: m.receipt.id, firma: m.receipt.sig }),
+      });
+    } catch (_) {
+      // senza rete la ricevuta si perde, ma la notifica è comparsa lo stesso
+    }
+  }
 }
 
 async function openApp(url) {
